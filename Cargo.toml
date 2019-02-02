@@ -1,7 +1,9 @@
 [package]
 name = "picobu"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Wojciech Olejnik <divoolej@gmail.com>"]
+readme = "README.md"
+categories = ["command-line-utilities", "development-tools::build-utils", "filesystem", "game-engines"]
 edition = "2018"
 description = "A simple, one-command build system for PICO-8 games"
 keywords = ["pico8", "pico-8"]
