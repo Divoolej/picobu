@@ -18,16 +18,16 @@ fn error(message: String) {
   process::exit(1);
 }
 
-fn check_input_files(input: PathBuf) -> Vec<String> {
+fn check_input_files(input: PathBuf) -> Vec<PathBuf> {
   if let Ok(metadata) = fs::metadata(&input) {
     if metadata.is_dir() {
-      let mut sources: Vec<String> = Vec::new();
+      let mut sources: Vec<PathBuf> = Vec::new();
       let contents = input.read_dir().unwrap();
       for entry in contents {
         let path = entry.unwrap().path();
         if let Some(ext) = path.extension() {
           if ext.to_str().unwrap() == "lua" {
-            sources.push(path.canonicalize().unwrap().to_str().unwrap().to_string());
+            sources.push(path);
           }
         }
       }
@@ -45,13 +45,13 @@ fn check_input_files(input: PathBuf) -> Vec<String> {
   panic!("Failed to validate input directory. Please report this bug.");
 }
 
-fn check_output_file(output: Option<PathBuf>) -> String {
+fn check_output_file(output: Option<PathBuf>) -> PathBuf {
   if let Some(path) = output {
     if let Ok(metadata) = fs::metadata(&path) {
       if metadata.is_file() {
         if let Some(ext) = path.extension() {
           if ext == "p8" {
-            return path.file_name().unwrap().to_str().unwrap().to_string();
+            return path;
           } else {
             error(format!("{:?} is not a valid *.p8 cartridge.", path));
           }
@@ -63,27 +63,26 @@ fn check_output_file(output: Option<PathBuf>) -> String {
       }
     } else {
       fs::File::create(&path).unwrap();
-      return path.file_name().unwrap().to_str().unwrap().to_string();
+      return path;
     }
   } else {
     println!("Output name not specified, looking for a *.p8 file in the current directory..");
-    let mut outputs: Vec<String> = Vec::new();
+    let mut outputs: Vec<PathBuf> = Vec::new();
     let contents = fs::read_dir(".").unwrap();
     for entry in contents {
       let path = entry.unwrap().path();
       if let Some(ext) = path.extension() {
         if ext.to_str().unwrap() == "p8" {
-          outputs.push(path.file_name().unwrap().to_str().unwrap().to_string());
+          outputs.push(path);
         }
       }
     }
     if outputs.len() == 0 {
-      let path = Path::new(".").canonicalize().unwrap();
-      let dir = path.as_path().file_name().unwrap().to_str().unwrap().to_string();
+      let dir = Path::new(".").to_str().unwrap();
       let dir = format!("{}.p8", dir);
       println!("No *.p8 files found, generating a new one using the current directory's name ({})..", dir);
       fs::File::create(&dir).unwrap();
-      return dir;
+      return Path::new(&dir).to_path_buf();
     } else if outputs.len() == 1 {
       println!("Found a *.p8 file - {:?} will be used as the compilation output.", outputs[0]);
       return outputs.pop().unwrap();
@@ -103,8 +102,11 @@ fn main() {
   for file in sources {
     full_code.push_str(
       &fs::read_to_string(&file)
-        .expect(&format!("Error: failed to read from file: {}", file))
+        .expect(&format!("Error: failed to read from file: {:?}", file))
     )
   }
-  println!("{}", full_code);
+  let current_output = fs::read_to_string(&output)
+    .expect(&format!("Error: failed to read from file: {:?}", output));
+  let header = current_output.split("__lua__").take(1);
+  println!("{:?}", header);
 }
