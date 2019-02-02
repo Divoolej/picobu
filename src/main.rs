@@ -1,7 +1,12 @@
+use std::io::Write;
 use structopt::StructOpt;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::fs;
+
+static PICO_HEADER: &str = "pico-8 cartridge // http://www.pico-8.com\nversion 16\n";
+static HEADER_SEPARATOR: &str = "__lua__\n";
+static FOOTER_SEPARATOR: &str = "__gfx__\n";
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -98,15 +103,47 @@ fn main() {
   let sources = check_input_files(opt.input);
   let output = check_output_file(opt.output);
   println!("Compiling {:?} into {:?}...", sources, output);
-  let mut full_code = "".to_string();
+  let mut full_code = String::new();
   for file in sources {
     full_code.push_str(
       &fs::read_to_string(&file)
         .expect(&format!("Error: failed to read from file: {:?}", file))
     )
   }
+  let mut f = fs::OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .open(&output).unwrap();
+  let mut new_content;
   let current_output = fs::read_to_string(&output)
     .expect(&format!("Error: failed to read from file: {:?}", output));
-  let header = current_output.split("__lua__").take(1);
-  println!("{:?}", header);
+  if current_output != "" {
+    let mut cartridge_iterator = current_output.split(HEADER_SEPARATOR);
+    let header = cartridge_iterator
+      .next()
+      .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
+    let footer = cartridge_iterator
+      .next()
+      .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.")
+      .split(FOOTER_SEPARATOR)
+      .skip(1)
+      .next()
+      .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
+    new_content = format!("{}{}{}{}{}",
+      header,
+      HEADER_SEPARATOR,
+      full_code,
+      FOOTER_SEPARATOR,
+      footer
+    );
+  } else {
+    new_content = format!("{}{}{}{}",
+      PICO_HEADER,
+      HEADER_SEPARATOR,
+      full_code,
+      FOOTER_SEPARATOR
+    );
+  }
+  f.write_all(new_content.as_bytes()).expect("Error: failed to write to the output file.");
+  f.sync_all().expect("Error: failed to write to the output file.");
 }
