@@ -98,11 +98,7 @@ fn check_output_file(output: Option<PathBuf>) -> PathBuf {
   panic!("Failed to validate the output file. Please report this bug.");
 }
 
-fn main() {
-  let opt = Opt::from_args();
-  let sources = check_input_files(opt.input);
-  let output = check_output_file(opt.output);
-  println!("Compiling {:?} into {:?}...", sources, output);
+fn concatenate_sources(sources: Vec<PathBuf>) -> String {
   let mut full_code = String::new();
   for file in sources {
     full_code.push_str(
@@ -110,40 +106,36 @@ fn main() {
         .expect(&format!("Error: failed to read from file: {:?}", file))
     )
   }
-  let mut f = fs::OpenOptions::new()
-    .write(true)
-    .truncate(true)
-    .open(&output).unwrap();
-  let mut new_content;
-  let current_output = fs::read_to_string(&output)
-    .expect(&format!("Error: failed to read from file: {:?}", output));
+  full_code
+}
+
+fn compile_new_content(output_path: &PathBuf, full_source: String) -> String {
+  let current_output = fs::read_to_string(output_path)
+    .expect(&format!("Error: failed to read from file: {:?}", output_path));
   if current_output != "" {
     let mut cartridge_iterator = current_output.split(HEADER_SEPARATOR);
-    let header = cartridge_iterator
-      .next()
+    let header = cartridge_iterator.next()
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
-    let footer = cartridge_iterator
-      .next()
+    let footer = cartridge_iterator.next()
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.")
-      .split(FOOTER_SEPARATOR)
-      .skip(1)
-      .next()
+      .split(FOOTER_SEPARATOR).skip(1).next()
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
-    new_content = format!("{}{}{}{}{}",
-      header,
-      HEADER_SEPARATOR,
-      full_code,
-      FOOTER_SEPARATOR,
-      footer
-    );
+    format!("{}{}{}{}{}", header, HEADER_SEPARATOR, full_source, FOOTER_SEPARATOR, footer)
   } else {
-    new_content = format!("{}{}{}{}",
-      PICO_HEADER,
-      HEADER_SEPARATOR,
-      full_code,
-      FOOTER_SEPARATOR
-    );
+    format!("{}{}{}{}", PICO_HEADER, HEADER_SEPARATOR, full_source, FOOTER_SEPARATOR)
   }
-  f.write_all(new_content.as_bytes()).expect("Error: failed to write to the output file.");
-  f.sync_all().expect("Error: failed to write to the output file.");
+}
+
+fn main() {
+  let opt = Opt::from_args();
+  // Validating..
+  let sources = check_input_files(opt.input);
+  let output_path = check_output_file(opt.output);
+  // Compiling..
+  println!("Compiling {:?} into {:?}...", sources, output_path);
+  let full_source = concatenate_sources(sources);
+  let mut output_file = fs::OpenOptions::new().write(true).truncate(true).open(&output_path).unwrap();
+  let new_content = compile_new_content(&output_path, full_source);
+  output_file.write_all(new_content.as_bytes()).expect("Error: failed to write to the output file.");
+  output_file.sync_all().expect("Error: failed to write to the output file.");
 }
