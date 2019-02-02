@@ -1,7 +1,11 @@
-use std::io::Write;
+use hotwatch::{Hotwatch, Event};
 use structopt::StructOpt;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, Arc};
+use std::io::Write;
 use std::process;
+use std::thread;
+use std::time;
 use std::fs;
 
 static PICO_HEADER: &str = "pico-8 cartridge // http://www.pico-8.com\nversion 16\n";
@@ -23,7 +27,7 @@ fn error(message: String) {
   process::exit(1);
 }
 
-fn check_input_files(input: PathBuf) -> Vec<PathBuf> {
+fn check_input_files(input: &PathBuf) -> Vec<PathBuf> {
   if let Ok(metadata) = fs::metadata(&input) {
     if metadata.is_dir() {
       let mut sources: Vec<PathBuf> = Vec::new();
@@ -47,16 +51,16 @@ fn check_input_files(input: PathBuf) -> Vec<PathBuf> {
   } else {
     error(format!("{:?} needs to be a valid directory.", input));
   }
-  panic!("Failed to validate input directory. Please report this bug.");
+  panic!("Failed to validate input directory. Please report this issue.");
 }
 
-fn check_output_file(output: Option<PathBuf>) -> PathBuf {
+fn check_output_file(output: &Option<PathBuf>) -> PathBuf {
   if let Some(path) = output {
     if let Ok(metadata) = fs::metadata(&path) {
       if metadata.is_file() {
         if let Some(ext) = path.extension() {
           if ext == "p8" {
-            return path;
+            return path.clone();
           } else {
             error(format!("{:?} is not a valid *.p8 cartridge.", path));
           }
@@ -68,7 +72,7 @@ fn check_output_file(output: Option<PathBuf>) -> PathBuf {
       }
     } else {
       fs::File::create(&path).unwrap();
-      return path;
+      return path.clone();
     }
   } else {
     println!("Output name not specified, looking for a *.p8 file in the current directory..");
@@ -95,10 +99,10 @@ fn check_output_file(output: Option<PathBuf>) -> PathBuf {
       error("Found more than one *.p8 file. Please specify the desired output in the arguments.".to_string());
     }
   }
-  panic!("Failed to validate the output file. Please report this bug.");
+  panic!("Failed to validate the output file. Please report this issue.");
 }
 
-fn concatenate_sources(sources: Vec<PathBuf>) -> String {
+fn concatenate_sources(sources: &Vec<PathBuf>) -> String {
   let mut full_code = String::new();
   for file in sources {
     full_code.push_str(
@@ -127,16 +131,88 @@ fn compile_new_content(output_path: &PathBuf, full_source: String) -> String {
   }
 }
 
-fn main() {
-  let opt = Opt::from_args();
-  // Validating..
-  let sources = check_input_files(opt.input);
-  let output_path = check_output_file(opt.output);
-  // Compiling..
-  println!("Compiling {:?} into {:?}...", sources, output_path);
+fn recompile(sources: &Vec<PathBuf>, output_path: &PathBuf) {
   let full_source = concatenate_sources(sources);
   let new_content = compile_new_content(&output_path, full_source);
   let mut output_file = fs::OpenOptions::new().write(true).truncate(true).open(&output_path).unwrap();
   output_file.write_all(new_content.as_bytes()).expect("Error: failed to write to the output file.");
   output_file.sync_all().expect("Error: failed to write to the output file.");
+}
+
+fn main() {
+  let opt = Opt::from_args();
+
+  // Validating..
+  let sources = check_input_files(&opt.input);
+  let output_path = check_output_file(&opt.output);
+
+  // Compiling..
+  println!("Compiling {:?} into {:?}...", sources, output_path);
+  recompile(&sources, &output_path);
+
+  // Watch Mode
+  if opt.watch {
+    let sources = Mutex::new(sources);
+    let is_compiling = Arc::new(Mutex::new(false));
+    println!("Watching...");
+    let mut hotwatch = Hotwatch::new()
+      .expect("Error: Could not initialize watch mode. Please report this issue.");
+    let is_compiling_mutex = Arc::clone(&is_compiling);
+    hotwatch.watch(opt.input.clone(), move |event: Event| {
+      match event {
+        Event::Create(_) => {
+          print!("Recompiling.. ");
+          *is_compiling_mutex.lock().unwrap() = true;
+          let mut sources = sources.lock().unwrap();
+          *sources = check_input_files(&opt.input);
+          recompile(&sources, &output_path);
+          *is_compiling_mutex.lock().unwrap() = false;
+          println!("Done!");
+        },
+        Event::NoticeWrite(_) => {
+          print!("Recompiling.. ");
+          *is_compiling_mutex.lock().unwrap() = true;
+          recompile(&*sources.lock().unwrap(), &output_path);
+          *is_compiling_mutex.lock().unwrap() = false;
+          println!("Done!");
+        },
+        Event::NoticeRemove(_) => {
+          print!("Recompiling.. ");
+          *is_compiling_mutex.lock().unwrap() = true;
+          let mut sources = sources.lock().unwrap();
+          *sources = check_input_files(&opt.input);
+          recompile(&sources, &output_path);
+          *is_compiling_mutex.lock().unwrap() = false;
+          println!("Done!");
+        },
+        Event::Rename(_, _) => {
+          print!("Recompiling.. ");
+          *is_compiling_mutex.lock().unwrap() = true;
+          let mut sources = sources.lock().unwrap();
+          *sources = check_input_files(&opt.input);
+          recompile(&*sources, &output_path);
+          *is_compiling_mutex.lock().unwrap() = false;
+          println!("Done!");
+        },
+        _ => ()
+      }
+    }).expect("Failed to watch the files.");
+
+    // Handle SIGINT & SIGTERM
+    ctrlc::set_handler(move || {
+      print!("Waiting for any builds to finish.. ");
+      loop {
+        if *is_compiling.lock().unwrap() {
+          thread::sleep(time::Duration::from_millis(10));
+        } else {
+          println!("Done.");
+          process::exit(0);
+        }
+      }
+    }).unwrap();
+
+    loop {
+      thread::sleep(time::Duration::from_millis(1000));
+    }
+  }
 }
