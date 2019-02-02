@@ -118,7 +118,8 @@ fn compile_new_content(output_path: &PathBuf, full_source: String) -> String {
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
     let footer = cartridge_iterator.next()
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.")
-      .split(FOOTER_SEPARATOR).skip(1).next()
+      .split(FOOTER_SEPARATOR)
+      .last()
       .expect("Error: failed to read the output file. The cartridge format seems to be incorrect.");
     format!("{}{}{}{}{}", header, HEADER_SEPARATOR, full_source, FOOTER_SEPARATOR, footer)
   } else {
@@ -134,8 +135,8 @@ fn main() {
   // Compiling..
   println!("Compiling {:?} into {:?}...", sources, output_path);
   let full_source = concatenate_sources(sources);
-  let mut output_file = fs::OpenOptions::new().write(true).truncate(true).open(&output_path).unwrap();
   let new_content = compile_new_content(&output_path, full_source);
+  let mut output_file = fs::OpenOptions::new().write(true).truncate(true).open(&output_path).unwrap();
   output_file.write_all(new_content.as_bytes()).expect("Error: failed to write to the output file.");
   output_file.sync_all().expect("Error: failed to write to the output file.");
 }
