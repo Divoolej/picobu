@@ -8,7 +8,9 @@ struct Opt {
   #[structopt(short = "i", long = "input", parse(from_os_str), default_value = "src/")]
   input: PathBuf,
   #[structopt(parse(from_os_str))]
-  output: Option<PathBuf>
+  output: Option<PathBuf>,
+  #[structopt(short = "w", long = "watch")]
+  watch: bool
 }
 
 fn error(message: String) {
@@ -25,13 +27,14 @@ fn check_input_files(input: PathBuf) -> Vec<String> {
         let path = entry.unwrap().path();
         if let Some(ext) = path.extension() {
           if ext.to_str().unwrap() == "lua" {
-            sources.push(path.file_name().unwrap().to_str().unwrap().to_string());
+            sources.push(path.canonicalize().unwrap().to_str().unwrap().to_string());
           }
         }
       }
       if sources.len() == 0 {
-        error(format!("No *.p8 files found in the input directory ({:?})", input));
+        error(format!("No *.lua files found in the input directory ({:?})", input));
       }
+      sources.sort();
       return sources;
     } else {
       error(format!("{:?} is a file, not a directory.", input));
@@ -95,5 +98,13 @@ fn main() {
   let opt = Opt::from_args();
   let sources = check_input_files(opt.input);
   let output = check_output_file(opt.output);
-  println!("Compiling {:?} into {:?}", sources, output);
+  println!("Compiling {:?} into {:?}...", sources, output);
+  let mut full_code = "".to_string();
+  for file in sources {
+    full_code.push_str(
+      &fs::read_to_string(&file)
+        .expect(&format!("Error: failed to read from file: {}", file))
+    )
+  }
+  println!("{}", full_code);
 }
