@@ -5,3 +5,5 @@ authors = ["Wojciech Olejnik <divoolej@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+structopt = "0.2"
+hotwatch = "0.3"
