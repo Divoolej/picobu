@@ -1,8 +1,12 @@
 [package]
 name = "picobu"
-version = "0.1.0"
+version = "1.0.1"
 authors = ["Wojciech Olejnik <divoolej@gmail.com>"]
 edition = "2018"
+description = "A simple, one-command build system for PICO-8 games"
+keywords = ["pico8", "pico-8"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/Divoolej/picobu.git"
 
 [dependencies]
 structopt = "0.2"
