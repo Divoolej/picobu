@@ -1,6 +1,6 @@
 [package]
 name = "picobu"
-version = "1.0.3"
+version = "1.0.4"
 authors = ["Wojciech Olejnik <divoolej@gmail.com>"]
 readme = "README.md"
 categories = ["command-line-utilities", "development-tools::build-utils", "filesystem", "game-engines"]

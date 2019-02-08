@@ -388,7 +388,7 @@ dependencies = [
 
 [[package]]
 name = "picobu"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "ctrlc 3.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hotwatch 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
