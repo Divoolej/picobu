@@ -87,8 +87,8 @@ fn check_output_file(output: &Option<PathBuf>) -> PathBuf {
       }
     }
     if outputs.len() == 0 {
-      let dir = Path::new(".").to_str().unwrap();
-      let dir = format!("{}.p8", dir);
+      let dir = Path::new("./").canonicalize().unwrap();
+      let dir = format!("{}.p8", dir.file_name().unwrap().to_str().unwrap());
       println!("No *.p8 files found, generating a new one using the current directory's name ({})..", dir);
       fs::File::create(&dir).unwrap();
       return Path::new(&dir).to_path_buf();

@@ -20,6 +20,7 @@ Picobu uses a sensible-defaults, zero-configuration approach. You can use it by 
 ### Installation
 
 #### Cross-platform
+<<<<<<< Updated upstream
 The easiest way to install Picobu on any OS is by using [cargo](https://www.rust-lang.org/tools/install):
 ```fish
 ❯ cargo install picobu
