@@ -1,5 +1,5 @@
 ## PicoBu(ild) - the simple, one-command build system for PICO-8 games.
-#### Picobu uses a sensible-defaults, zero-configuration approach. You can use it by simply typing in the `picobu` command in your project directory. It also supports a watch mode - rebuilding the cartridge on file changes.
+Picobu uses a sensible-defaults, zero-configuration approach. You can use it by simply typing in the `picobu` command in your project directory. It also supports a watch mode - rebuilding the cartridge on file changes.
 
 ### Usage
 ```bash
