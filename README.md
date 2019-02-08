@@ -1,6 +1,8 @@
 ## PicoBu(ild) - the simple, one-command build system for PICO-8 games. Written in Rust :crab:
 Picobu uses a sensible-defaults, zero-configuration approach. You can use it by simply typing in the `picobu` command in your project directory. It also supports a watch mode - rebuilding the cartridge on file changes.
 
+![](picobu.gif)
+
 ### Usage
 ```fish
 # Look for *.lua files in the src/ directory and compile them into a single *.p8 file.
