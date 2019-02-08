@@ -11,7 +11,7 @@ Picobu uses a sensible-defaults, zero-configuration approach. You can use it by 
 # Look for *.lua files in the code/ folder instead.
 ❯ picobu -i code
 
-# Specify a name of the output file.
+# Specify a name for the output file.
 # Note that if a *.p8 file is already present in the current directory, picobu is smart enough to find it on it's own.
 ❯ picobu pico_game.p8
 
@@ -35,7 +35,7 @@ Get it from Homebrew:
 
 #### Windows
 If you don't want to install cargo, you can download the latest release [here](https://github.com/Divoolej/picobu/releases/latest).
-Keep in mind you'll have to add the executable to you PATH manually.
+Keep in mind you'll have to add the executable to your PATH manually.
 
 #### Linux
 I don't provide pre-built Linux binaries at the moment, so you'll have to use cargo.
