@@ -1,7 +1,7 @@
 ## PicoBu(ild) - the simple, one-command build system for PICO-8 games. Written in Rust :crab:
 Picobu uses a sensible-defaults, zero-configuration approach. You can use it by simply typing in the `picobu` command in your project directory. It also supports a watch mode - rebuilding the cartridge on file changes.
 
-### Update: With the addition of "#include" statements in the newest version of PICO-8, Picobu is no longer required to enabled source code splitting. While the program still definitely works it is encouraged to use "#include" instead.
+### Update: With the addition of "#include" statements in the newest version of PICO-8, Picobu is no longer required to enable source code splitting. While the program still definitely works it is encouraged to use "#include" instead.
 
 ![](picobu.gif)
 
